@@ -9,7 +9,7 @@ let pontosAcumulados = 0;
 // Redirect do botão menu das VCards
 
 document.getElementById("irparaomenuvcards").addEventListener("click", () => {
-  window.location.href = "Menu.html";
+  window.location.href = "menu.html";
 });
 
 
