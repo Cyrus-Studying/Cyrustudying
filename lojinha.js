@@ -14,7 +14,7 @@ const itensLoja = [
 // Redirect do botão Menu
 
 document.getElementById("voltarparaomenulojinha").addEventListener("click", () => {
-  window.location.href = "Menu.html";
+  window.location.href = "menu.html";
 });
 
 
