@@ -5,9 +5,10 @@ import { ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.0.0/f
 // Array com os itens da loja com propriedades extras: tipo e link
 
 const itensLoja = [
-  { nome: "Curso de Shifting", preco: 100, tipo: "documento", link: window.location.origin + "/shiftingcurso.pdf" },
-  { nome: "Cartela de 10 adesivos 28 mm x 28 mm", preco: 10, tipo: "documento", link: "cyrustudying@gmail.com" },
-  { nome: "Outro PDF", preco: 150, tipo: "video", link: "https://exemplo.com/outro.pdf" }
+  { nome: "5 exercícios de matemática - 9 ano, Trimestre 1 2025", preco: 50, tipo: "documento", link: "https://drive.google.com/file/d/1dHAB1Q9mt4VjChttPaJOJuRmvnhbyQ-7/view?usp=sharing" },
+  { nome: "Resumo de Inglês sobre conditional - 9 ano, Unit 4 2025", preco: 70, tipo: "documento", link: "https://drive.google.com/file/d/1dIptFm6DC9oLlhcBYSqjDab2JFljlJet/view?usp=sharing" },
+  { nome: "Resumo de Português - 9 ano, m.14, m.15 e m.17 2025", preco: 100, tipo: "documento", link: "https://drive.google.com/file/d/1dH1fgzmorfm9WO885_r_BVx24qZ_TJrO/view?usp=sharing" },
+  //{ nome: "Outro PDF", preco: 150, tipo: "video", link: "https://exemplo.com/outro.pdf" }
 ];
 
 
