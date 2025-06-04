@@ -3,7 +3,7 @@ import {
   ref,
   get,
   set,
-  push,
+  update,
   onValue
 } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
@@ -115,18 +115,19 @@ async function comprarItem(itemId) {
       console.error("Elemento 'tp' não encontrado!");
   }
 
-  const compraRef = ref(db, `usuarios/${userId}/itensComprados`);
-  const compraObj = {
+  // Registra a compra usando o mesmo ID do item
+  const compraRef = ref(db, `usuarios/${userId}/itensComprados/${itemId}`);
+  await set(compraRef, {
     nome: item.nome,
     preco: precoItem,
     tipo: item.tipo || "documento",
     link: item.link || "",
     dataCompra: new Date().toISOString()
-  };
-  await push(compraRef, compraObj);
+  });
+
   alert(`Compra realizada: ${item.nome}`);
 
-  // Recarrega os itens disponíveis para atualizar os links após a compra
+  // Recarrega os itens comprados para atualizar os links após a compra
   const itensComprados = await obterItensComprados(userId);
   document.querySelectorAll(".lj-item").forEach((divItem) => {
       const itemId = divItem.querySelector(".button-menu")?.getAttribute("data-item-id");
