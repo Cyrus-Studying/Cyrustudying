@@ -1,25 +1,21 @@
 import { auth, db } from "./firebase.js";
-import { ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+import {
+  ref,
+  get,
+  set,
+  push,
+  onValue
+} from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
 
-// Array com os itens da loja com propriedades extras: tipo e link
-
-const itensLoja = [
-  { nome: "5 exercícios de matemática - 9 ano, Trimestre 1 2025", preco: 50, tipo: "documento", link: "https://drive.google.com/file/d/1dHAB1Q9mt4VjChttPaJOJuRmvnhbyQ-7/view?usp=sharing" },
-  { nome: "Resumo de Inglês sobre conditional - 9 ano, Unit 4 2025", preco: 70, tipo: "documento", link: "https://drive.google.com/file/d/1dIptFm6DC9oLlhcBYSqjDab2JFljlJet/view?usp=sharing" },
-  { nome: "Resumo de Português - 9 ano, m.14, m.15 e m.17 2025", preco: 100, tipo: "documento", link: "https://drive.google.com/file/d/1dH1fgzmorfm9WO885_r_BVx24qZ_TJrO/view?usp=sharing" },
-  //{ nome: "Outro PDF", preco: 150, tipo: "video", link: "https://exemplo.com/outro.pdf" }
-];
-
-
-// Redirect do botão Menu
+// REDIRECIONA O BOTÃO MENU
 
 document.getElementById("voltarparaomenulojinha").addEventListener("click", () => {
   window.location.href = "menu.html";
 });
 
 
-// Carregar os Tp e os itens comprados quando o DOM estiver pronto
+// CARREGA OS Tp E OS ITENS COMPRADOS (mantendo o que não é relacionado à exibição dos itens disponíveis)
 
 document.addEventListener("DOMContentLoaded", () => {
   auth.onAuthStateChanged(async (user) => {
@@ -48,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       
       try {
-        // Carregar os itens comprados
+        // Carregar os itens comprados do usuário
         const itensCompradosRef = ref(db, `usuarios/${userId}/itensComprados`);
         const comprasSnapshot = await get(itensCompradosRef);
         
@@ -60,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
           
           // Itera sobre os itens comprados e exibe-os
           for (const key in compras) {
-            if (compras.hasOwnProperty(key)) {
+            if (Object.hasOwnProperty.call(compras, key)) {
               const compra = compras[key];
               let conteudo = "";
               
@@ -73,13 +69,12 @@ document.addEventListener("DOMContentLoaded", () => {
               } else {
                   conteudo = `<p class="item-comprado-sucesso">${compra.nome} - Compra realizada com sucesso!</p>`;
               }
-
               
               containerComprados.innerHTML += conteudo;
             }
           }
           
-          // Opcionalmente, adicione uma classe ao container para aplicar um estilo geral
+          // Opcional: Adiciona uma classe ao container para aplicar um estilo geral
           containerComprados.classList.add("estilo-itens-comprados");
           
         } else {
@@ -94,89 +89,91 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Nenhum usuário autenticado!");
     }
   });
-});
-
-
-// Adiciona eventos de compra aos botões de cada item
-
-document.querySelectorAll(".button-menu").forEach((botao, index) => {
-  botao.addEventListener("click", () => {
-    comprarItem(index);
+  
+  
+  // CARREGA OS ITENS DISPONÍVEIS DO NÓ "itens" NO FIREBASE
+  
+  const containerDisponiveis = document.getElementById("itensDisponiveis");
+  const itensRef = ref(db, "itens");
+  
+  // Observa as alterações no nó "itens" e atualiza a exibição
+  onValue(itensRef, (snapshot) => {
+    containerDisponiveis.innerHTML = ""; // Limpa o container
+    const itens = snapshot.val();
+    
+    if (!itens) {
+      containerDisponiveis.innerHTML = "<p>Nenhum item disponível.</p>";
+      return;
+    }
+    
+    // Itera sobre os itens e gera o HTML dinamicamente
+    for (const id in itens) {
+      if (Object.hasOwnProperty.call(itens, id)) {
+        const item = itens[id];
+        const divItem = document.createElement("div");
+        divItem.classList.add("lj-item", "noborder");
+        divItem.innerHTML = `
+          <h3 class="menu-texto" style="font-size:130%;">${item.nome}</h3>
+          <p class="menu-texto" style="font-size:90%;">${item.descricao || ""} - ${item.preco} Tp</p>
+          <button class="button-menu" data-item-id="${id}">Comprar</button>
+        `;
+        containerDisponiveis.appendChild(divItem);
+      }
+    }
+    
+    // Adiciona eventos de clique para cada botão de "Comprar"
+    containerDisponiveis.querySelectorAll(".button-menu").forEach((button) => {
+      button.addEventListener("click", () => {
+        const itemId = button.getAttribute("data-item-id");
+        comprarItem(itemId);
+      });
+    });
   });
 });
 
 
-// Função para realizar a compra de um item
+// FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
 
-async function comprarItem(index) {
+async function comprarItem(itemId) {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     alert("Usuário não autenticado!");
     return;
   }
   
+  // Recupera os detalhes do item disponível via itemId
+  const itemRef = ref(db, `itens/${itemId}`);
+  const itemSnapshot = await get(itemRef);
+  if (!itemSnapshot.exists()) {
+    alert("Item não encontrado!");
+    return;
+  }
+  const item = itemSnapshot.val();
+  const precoItem = item.preco;
+  
   // Obtém os Tp atuais do usuário
-  
   const tpRef = ref(db, `usuarios/${userId}/Tp`);
-  const snapshot = await get(tpRef);
-  const tpAtual = snapshot.exists() ? Number(snapshot.val()) : 0;
-  const precoItem = itensLoja[index].preco;
-  
+  const tpSnapshot = await get(tpRef);
+  const tpAtual = tpSnapshot.exists() ? Number(tpSnapshot.val()) : 0;
   if (tpAtual < precoItem) {
     alert("Pontos insuficientes para comprar este item!");
     return;
   }
   
+  // Deduz o preço do item dos Tp do usuário
   const novoTp = tpAtual - precoItem;
-  
-  // Atualiza os Tp's no Firebase
-  
   await set(tpRef, novoTp);
-  
-  // Atualiza o display dos Tp's
-  
   document.getElementById("tp").innerText = `Tp: ${novoTp}`;
   
-  // Salva os detalhes da compra na nuvem (histórico)
-  
+  // Registra a compra no histórico de itens comprados do usuário
   const compraRef = ref(db, `usuarios/${userId}/itensComprados`);
   const compraObj = {
-    nome: itensLoja[index].nome,
+    nome: item.nome,
     preco: precoItem,
-    tipo: itensLoja[index].tipo,
-    link: itensLoja[index].link,
+    tipo: item.tipo || "documento",
+    link: item.link || "",
     dataCompra: new Date().toISOString()
   };
-  
-  try {
-    await push(compraRef, compraObj);
-    console.log("Dados da compra salvos com sucesso.");
-  } catch (error) {
-    console.error("Erro ao salvar dados no Realtime Database:", error);
-  }
-  
-  // Exibe o item comprado na tela, no container "itensComprados", utilizando classes para o estilo
-  
-  const containerComprados = document.getElementById("itensComprados");
-  if (containerComprados) {
-    let conteudo = "";
-    
-    if (itensLoja[index].tipo === "documento") {
-      conteudo = `<p class="item-comprado-doc">${itensLoja[index].nome} - 
-                    <a href="${itensLoja[index].link}" target="_blank" download>Baixar Documento</a></p>`;
-    } else if (itensLoja[index].tipo === "video") {
-      conteudo = `<p class="item-comprado-video">${itensLoja[index].nome} - 
-                    <a href="${itensLoja[index].link}" target="_blank">Assistir Vídeo</a></p>`;
-    } else {
-      conteudo = `<p class="item-comprado-sucesso">${itensLoja[index].nome} - Compra realizada com sucesso!</p>`;
-    }
-    
-    containerComprados.innerHTML += conteudo;
-    
-    // Você pode também modificar o estilo do container adicionando ou removendo classes:
-    containerComprados.classList.add("estilo-itens-comprados");
-    
-  } else {
-    console.log("Container para itens comprados não encontrado!");
-  }
+  await push(compraRef, compraObj);
+  alert(`Compra realizada: ${item.nome}`);
 }
