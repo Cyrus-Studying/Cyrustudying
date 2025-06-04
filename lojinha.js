@@ -93,7 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // CARREGA OS ITENS DISPONÍVEIS DO NÓ "itens" NO FIREBASE
   
-  const containerDisponiveis = document.getElementById("itensDisponiveis");
+const containerDisponiveis = document.getElementById("itensDisponiveis");
+if (!containerDisponiveis) {
+    console.error("Elemento 'itensDisponiveis' não encontrado!");
+    return;
+}
+
   const itensRef = ref(db, "itens");
   
   // Observa as alterações no nó "itens" e atualiza a exibição
