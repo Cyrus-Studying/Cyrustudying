@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
         divItem.innerHTML = `
           <h3 class="menu-texto" style="font-size:130%;">${item.nome}</h3>
           <p class="menu-texto" style="font-size:90%;">${item.descricao || ""} - ${item.preco} Tp</p>
+          ${item.link ? `<p><a href="${item.link}" target="_blank">Acessar conteúdo</a></p>` : ""}
           <button class="button-menu" data-item-id="${id}">Comprar</button>
         `;
         containerDisponiveis.appendChild(divItem);
@@ -134,56 +135,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-
-
-// FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
-
-async function comprarItem(itemId) {
-  const userId = auth.currentUser?.uid;
-  if (!userId) {
-    alert("Usuário não autenticado!");
-    return;
-  }
-  
-  // Recupera os detalhes do item
-  const itemRef = ref(db, `itens/${itemId}`);
-  const itemSnapshot = await get(itemRef);
-  if (!itemSnapshot.exists()) {
-    alert("Item não encontrado!");
-    return;
-  }
-  const item = itemSnapshot.val();
-  const precoItem = item.preco;
-  
-  // Obtém os Tp atuais do usuário
-  const tpRef = ref(db, `usuarios/${userId}/Tp`);
-  const tpSnapshot = await get(tpRef);
-  const tpAtual = tpSnapshot.exists() ? Number(tpSnapshot.val()) : 0;
-  if (tpAtual < precoItem) {
-    alert("Pontos insuficientes para comprar este item!");
-    return;
-  }
-  
-  // Deduz o preço do item dos Tp do usuário
-  const novoTp = tpAtual - precoItem;
-  await set(tpRef, novoTp);
-  
-  const tpElement = document.getElementById("tp");
-  if (tpElement) {
-      tpElement.innerText = `Tp: ${novoTp}`;
-  } else {
-      console.error("Elemento 'tp' não encontrado!");
-  }
-  
-  // Registra a compra no histórico de itens comprados
-  const compraRef = ref(db, `usuarios/${userId}/itensComprados`);
-  const compraObj = {
-    nome: item.nome,
-    preco: precoItem,
-    tipo: item.tipo || "documento",
-    link: item.link || "",
-    dataCompra: new Date().toISOString()
-  };
-  await push(compraRef, compraObj);
-  alert(`Compra realizada: ${item.nome}`);
-}
