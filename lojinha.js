@@ -15,87 +15,73 @@ document.getElementById("voltarparaomenulojinha").addEventListener("click", () =
 });
 
 
-// CARREGA OS Tp E OS ITENS COMPRADOS
+// FUNÇÃO PARA OBTER ITENS COMPRADOS
 
-document.addEventListener("DOMContentLoaded", () => {
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      const userId = user.uid;
-      console.log("Usuário autenticado, UID:", userId);
-      
-      try {
-        // Carregar os Tp do usuário
-        const tpRef = ref(db, `usuarios/${userId}/Tp`);
-        const tpSnapshot = await get(tpRef);
-        let tpValue = tpSnapshot.exists() ? Number(tpSnapshot.val()) : 0;
+async function obterItensComprados(userId) {
+    const itensCompradosRef = ref(db, `usuarios/${userId}/itensComprados`);
+    const comprasSnapshot = await get(itensCompradosRef);
+    
+    if (comprasSnapshot.exists()) {
+        return Object.keys(comprasSnapshot.val()); // Retorna os IDs dos itens comprados
+    }
+    return []; // Retorna lista vazia se nenhum item foi comprado
+}
 
-        console.log("Pontos encontrados:", tpValue);
-        
-        const tpElement = document.getElementById("tp");
-        if (tpElement) {
-            tpElement.innerText = `Tp: ${tpValue}`;
-        } else {
-            console.error("Elemento 'tp' não encontrado!");
-        }
-        
-      } catch (error) {
-        console.error("Erro ao buscar/salvar Tp:", error);
-      }
-      
-      try {
-        // Carregar os itens comprados do usuário
-        const itensCompradosRef = ref(db, `usuarios/${userId}/itensComprados`);
-        const comprasSnapshot = await get(itensCompradosRef);
-        
-        const containerComprados = document.getElementById("itensComprados");
-        if (!containerComprados) {
-            console.error("Elemento 'itensComprados' não encontrado!");
+
+// CARREGA OS ITENS DISPONÍVEIS E VERIFICA SE JÁ FORAM COMPRADOS
+
+auth.onAuthStateChanged(async (user) => {
+    if (!user) return;
+
+    const itensComprados = await obterItensComprados(user.uid);
+    
+    onValue(ref(db, "itens"), (snapshot) => {
+        const containerDisponiveis = document.getElementById("itensDisponiveis");
+        if (!containerDisponiveis) {
+            console.error("Elemento 'itensDisponiveis' não encontrado!");
             return;
         }
-        
-        containerComprados.innerHTML = ""; // Limpa o container
-      
-        if (comprasSnapshot.exists()) {
-          const compras = comprasSnapshot.val();
-          
-          for (const key in compras) {
-            if (Object.hasOwnProperty.call(compras, key)) {
-              const compra = compras[key];
-              let conteudo = "";
-              
-              if (compra.tipo === "documento") {
-                  conteudo = `<p class="item-comprado-doc">${compra.nome} - 
-                                <button onclick="window.open('${compra.link}', '_blank')">Baixar Documento</button></p>`;
-              } else if (compra.tipo === "video") {
-                  conteudo = `<p class="item-comprado-video">${compra.nome} - 
-                                <button onclick="window.open('${compra.link}', '_blank')">Assistir Vídeo</button></p>`;
-              } else {
-                  conteudo = `<p class="item-comprado-sucesso">${compra.nome} - Compra realizada com sucesso!</p>`;
-              }
-              
-              containerComprados.innerHTML += conteudo;
-            }
-          }
-          
-          containerComprados.classList.add("estilo-itens-comprados");
-          
-        } else {
-          console.log("Nenhum item comprado encontrado.");
-        }
-        
-      } catch (error) {
-        console.error("Erro ao carregar itens comprados:", error);
-      }
-      
-    } else {
-      console.log("Nenhum usuário autenticado!");
-    }
-  });
-  
-  // FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
-async function comprarItem(itemId) {
-  console.log("Iniciando compra para o item ID:", itemId); // Teste
 
+        containerDisponiveis.innerHTML = "";
+        const itens = snapshot.val();
+
+        if (!itens) {
+            containerDisponiveis.innerHTML = "<p>Nenhum item disponível.</p>";
+            return;
+        }
+
+        for (const id in itens) {
+            const item = itens[id];
+            const divItem = document.createElement("div");
+            divItem.classList.add("lj-item", "noborder");
+            
+            // Verifica se o usuário já comprou este item
+            const jaComprado = itensComprados.includes(id);
+            
+            divItem.innerHTML = `
+                <h3 class="menu-texto" style="font-size:130%;">${item.nome}</h3>
+                <p class="menu-texto" style="font-size:90%;">${item.descricao || ""} - ${item.preco} Tp</p>
+                ${jaComprado ? `<p><a href="${item.link}" target="_blank">Acessar conteúdo</a></p>` : ""}
+                <button class="button-menu" data-item-id="${id}">Comprar</button>
+            `;
+            
+            containerDisponiveis.appendChild(divItem);
+        }
+
+        // Adiciona eventos de clique nos botões de compra
+        containerDisponiveis.querySelectorAll(".button-menu").forEach((button) => {
+            button.addEventListener("click", () => {
+                const itemId = button.getAttribute("data-item-id");
+                comprarItem(itemId);
+            });
+        });
+    });
+});
+
+
+// FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
+
+async function comprarItem(itemId) {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     alert("Usuário não autenticado!");
@@ -139,48 +125,16 @@ async function comprarItem(itemId) {
   };
   await push(compraRef, compraObj);
   alert(`Compra realizada: ${item.nome}`);
-}
 
-  
-  // CARREGA OS ITENS DISPONÍVEIS DO NÓ "itens" NO FIREBASE
-  
-  const containerDisponiveis = document.getElementById("itensDisponiveis");
-  if (!containerDisponiveis) {
-      console.error("Elemento 'itensDisponiveis' não encontrado!");
-      return;
-  }
-
-  const itensRef = ref(db, "itens");
-  
-  onValue(itensRef, (snapshot) => {
-    containerDisponiveis.innerHTML = ""; // Limpa o container
-    const itens = snapshot.val();
-    
-    if (!itens) {
-      containerDisponiveis.innerHTML = "<p>Nenhum item disponível.</p>";
-      return;
-    }
-    
-    for (const id in itens) {
-      if (Object.hasOwnProperty.call(itens, id)) {
-        const item = itens[id];
-        const divItem = document.createElement("div");
-        divItem.classList.add("lj-item", "noborder");
-        divItem.innerHTML = `
-          <h3 class="menu-texto" style="font-size:130%;">${item.nome}</h3>
-          <p class="menu-texto" style="font-size:90%;">${item.descricao || ""} - ${item.preco} Tp</p>
-          ${item.link ? `<p><a href="${item.link}" target="_blank">Acessar conteúdo</a></p>` : ""}
-          <button class="button-menu" data-item-id="${id}">Comprar</button>
-        `;
-        containerDisponiveis.appendChild(divItem);
+  // Recarrega os itens disponíveis para atualizar os links após a compra
+  const itensComprados = await obterItensComprados(userId);
+  document.querySelectorAll(".lj-item").forEach((divItem) => {
+      const itemId = divItem.querySelector(".button-menu")?.getAttribute("data-item-id");
+      if (itemId && itensComprados.includes(itemId)) {
+          const itemSnapshot = itens[itemId];
+          if (itemSnapshot) {
+              divItem.querySelector("p").insertAdjacentHTML("beforeend", `<p><a href="${itemSnapshot.link}" target="_blank">Acessar conteúdo</a></p>`);
+          }
       }
-    }
-    
-    containerDisponiveis.querySelectorAll(".button-menu").forEach((button) => {
-      button.addEventListener("click", () => {
-        const itemId = button.getAttribute("data-item-id");
-        comprarItem(itemId);
-      });
-    });
   });
-});
+}
