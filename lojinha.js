@@ -92,6 +92,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
+  // FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
+async function comprarItem(itemId) {
+  console.log("Iniciando compra para o item ID:", itemId); // Teste
+
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    alert("Usuário não autenticado!");
+    return;
+  }
+
+  const itemRef = ref(db, `itens/${itemId}`);
+  const itemSnapshot = await get(itemRef);
+  if (!itemSnapshot.exists()) {
+    alert("Item não encontrado!");
+    return;
+  }
+  const item = itemSnapshot.val();
+  const precoItem = item.preco;
+
+  const tpRef = ref(db, `usuarios/${userId}/Tp`);
+  const tpSnapshot = await get(tpRef);
+  const tpAtual = tpSnapshot.exists() ? Number(tpSnapshot.val()) : 0;
+  if (tpAtual < precoItem) {
+    alert("Pontos insuficientes para comprar este item!");
+    return;
+  }
+
+  const novoTp = tpAtual - precoItem;
+  await set(tpRef, novoTp);
+
+  const tpElement = document.getElementById("tp");
+  if (tpElement) {
+      tpElement.innerText = `Tp: ${novoTp}`;
+  } else {
+      console.error("Elemento 'tp' não encontrado!");
+  }
+
+  const compraRef = ref(db, `usuarios/${userId}/itensComprados`);
+  const compraObj = {
+    nome: item.nome,
+    preco: precoItem,
+    tipo: item.tipo || "documento",
+    link: item.link || "",
+    dataCompra: new Date().toISOString()
+  };
+  await push(compraRef, compraObj);
+  alert(`Compra realizada: ${item.nome}`);
+}
+
   
   // CARREGA OS ITENS DISPONÍVEIS DO NÓ "itens" NO FIREBASE
   
