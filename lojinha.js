@@ -15,7 +15,7 @@ document.getElementById("voltarparaomenulojinha").addEventListener("click", () =
 });
 
 
-// CARREGA OS Tp E OS ITENS COMPRADOS (mantendo o que não é relacionado à exibição dos itens disponíveis)
+// CARREGA OS Tp E OS ITENS COMPRADOS
 
 document.addEventListener("DOMContentLoaded", () => {
   auth.onAuthStateChanged(async (user) => {
@@ -27,17 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Carregar os Tp do usuário
         const tpRef = ref(db, `usuarios/${userId}/Tp`);
         const tpSnapshot = await get(tpRef);
-        let tpValue = 0;
+        let tpValue = tpSnapshot.exists() ? Number(tpSnapshot.val()) : 0;
+
+        console.log("Pontos encontrados:", tpValue);
         
-        if (tpSnapshot.exists()) {
-          tpValue = Number(tpSnapshot.val());
-          console.log("Pontos encontrados:", tpValue);
+        const tpElement = document.getElementById("tp");
+        if (tpElement) {
+            tpElement.innerText = `Tp: ${tpValue}`;
         } else {
-          console.log("Nenhum ponto encontrado, inicializando com 0.");
-          await set(tpRef, 0);
+            console.error("Elemento 'tp' não encontrado!");
         }
-        
-        document.getElementById("tp").innerText = `Tp: ${tpValue}`;
         
       } catch (error) {
         console.error("Erro ao buscar/salvar Tp:", error);
@@ -49,12 +48,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const comprasSnapshot = await get(itensCompradosRef);
         
         const containerComprados = document.getElementById("itensComprados");
+        if (!containerComprados) {
+            console.error("Elemento 'itensComprados' não encontrado!");
+            return;
+        }
+        
         containerComprados.innerHTML = ""; // Limpa o container
       
         if (comprasSnapshot.exists()) {
           const compras = comprasSnapshot.val();
           
-          // Itera sobre os itens comprados e exibe-os
           for (const key in compras) {
             if (Object.hasOwnProperty.call(compras, key)) {
               const compra = compras[key];
@@ -74,7 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
           
-          // Opcional: Adiciona uma classe ao container para aplicar um estilo geral
           containerComprados.classList.add("estilo-itens-comprados");
           
         } else {
@@ -93,15 +95,14 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // CARREGA OS ITENS DISPONÍVEIS DO NÓ "itens" NO FIREBASE
   
-const containerDisponiveis = document.getElementById("itensDisponiveis");
-if (!containerDisponiveis) {
-    console.error("Elemento 'itensDisponiveis' não encontrado!");
-    return;
-}
+  const containerDisponiveis = document.getElementById("itensDisponiveis");
+  if (!containerDisponiveis) {
+      console.error("Elemento 'itensDisponiveis' não encontrado!");
+      return;
+  }
 
   const itensRef = ref(db, "itens");
   
-  // Observa as alterações no nó "itens" e atualiza a exibição
   onValue(itensRef, (snapshot) => {
     containerDisponiveis.innerHTML = ""; // Limpa o container
     const itens = snapshot.val();
@@ -111,7 +112,6 @@ if (!containerDisponiveis) {
       return;
     }
     
-    // Itera sobre os itens e gera o HTML dinamicamente
     for (const id in itens) {
       if (Object.hasOwnProperty.call(itens, id)) {
         const item = itens[id];
@@ -126,7 +126,6 @@ if (!containerDisponiveis) {
       }
     }
     
-    // Adiciona eventos de clique para cada botão de "Comprar"
     containerDisponiveis.querySelectorAll(".button-menu").forEach((button) => {
       button.addEventListener("click", () => {
         const itemId = button.getAttribute("data-item-id");
@@ -146,7 +145,7 @@ async function comprarItem(itemId) {
     return;
   }
   
-  // Recupera os detalhes do item disponível via itemId
+  // Recupera os detalhes do item
   const itemRef = ref(db, `itens/${itemId}`);
   const itemSnapshot = await get(itemRef);
   if (!itemSnapshot.exists()) {
@@ -168,9 +167,15 @@ async function comprarItem(itemId) {
   // Deduz o preço do item dos Tp do usuário
   const novoTp = tpAtual - precoItem;
   await set(tpRef, novoTp);
-  document.getElementById("tp").innerText = `Tp: ${novoTp}`;
   
-  // Registra a compra no histórico de itens comprados do usuário
+  const tpElement = document.getElementById("tp");
+  if (tpElement) {
+      tpElement.innerText = `Tp: ${novoTp}`;
+  } else {
+      console.error("Elemento 'tp' não encontrado!");
+  }
+  
+  // Registra a compra no histórico de itens comprados
   const compraRef = ref(db, `usuarios/${userId}/itensComprados`);
   const compraObj = {
     nome: item.nome,
