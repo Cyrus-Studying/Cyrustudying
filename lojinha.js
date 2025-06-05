@@ -76,11 +76,26 @@ async function carregarItensDisponiveis(user) {
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         console.log("Usuário autenticado, UID:", user.uid);
+
+        // Aqui, por volta da linha 62
+        const tpRef = ref(db, `usuarios/${user.uid}/Tp`);
+        onValue(tpRef, (snapshot) => {
+            const tpElement = document.getElementById("tp");
+            if (!tpElement) {
+                console.error("Elemento 'tp' não encontrado!");
+                return;
+            }
+            tpElement.innerText = `Tp: ${snapshot.exists() ? snapshot.val() : 0}`;
+            console.log("TriPontos carregados:", snapshot.val());
+        });
+
+        // Continuar com o carregamento dos itens
         carregarItensDisponiveis(user);
     } else {
         console.log("Nenhum usuário autenticado!");
     }
 });
+
 
 // FUNÇÃO PARA REALIZAR A COMPRA DE UM ITEM
 async function comprarItem(userId, itemId) {
