@@ -70,7 +70,7 @@ document.addEventListener("click", (event) => {
     if (event.target.classList.contains("certo")) {
       pontosAcumulados += 10;
       console.log("Pontos acumulados:", pontosAcumulados);
-      alert("Você acertou! Agora você vai ganhar, no total, ", pontosAcumulados, " TriPontos!")
+      alert("Você acertou! Parabéns!")
     }
     else if (event.target.classList.contains("errado")) {
       alert("Resposta errada!")}
