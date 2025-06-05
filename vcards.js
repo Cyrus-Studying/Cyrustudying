@@ -8,82 +8,94 @@ document.getElementById("irparaomenuvcards").addEventListener("click", () => {
   window.location.href = "menu.html";
 });
 
-// Autenticação: Ao detectar o usuário autenticado, armazena o UID e carrega a interface de edição
+// Autenticação: Ao detectar o usuário autenticado, armazena o UID e carrega as VCards
 auth.onAuthStateChanged((user) => {
   if (user && user.uid) {
     console.log("Usuário autenticado! UID:", user.uid);
     currentUserId = user.uid;
-    // Carrega os VCards para edição
-    loadVCardsEditor();
+    carregarVCards(); // Exibe as VCards direto do Firebase
   } else {
     console.error("Nenhum usuário autenticado!");
   }
 });
 
-// Função para carregar os VCards do Realtime Database e renderizá-los como formulários de edição
-function loadVCardsEditor() {
+// Função para carregar e exibir as VCards do Firebase
+function carregarVCards() {
   const vcardsRef = ref(db, "vcards");
+
+  // Ouvinte para atualizações automáticas no HTML
   onValue(vcardsRef, (snapshot) => {
-    const data = snapshot.val();
-    renderVCardsEditor(data);
+    const vcardsData = snapshot.val();
+    exibirVCardsNoHTML(vcardsData);
   });
 }
 
-// Função para renderizar a interface de edição dentro do container com id "vcardsContainer"
-// Cada VCard exibirá seus detalhes e um botão para salvar possíveis alterações
-function renderVCardsEditor(vcardsData) {
+// Renderizar as VCards no HTML usando os dados do Firebase
+function exibirVCardsNoHTML(vcardsData) {
   const container = document.getElementById("vcardsContainer");
-  container.innerHTML = ""; // Limpa o container
+  container.innerHTML = ""; // Limpa antes de renderizar
 
   if (!vcardsData) {
     container.innerHTML = "<p>Nenhuma VCard encontrada.</p>";
     return;
   }
 
-  // Para cada VCard no objeto recuperado do database, cria um bloco de edição
+  // Para cada VCard no Firebase, cria elementos no HTML
   for (const cardId in vcardsData) {
     const card = vcardsData[cardId];
-    const divCard = document.createElement("div");
-    divCard.classList.add("vcard-editor");
-    divCard.innerHTML = `
-      <h2>ID: ${cardId}</h2>
-      <label>Pergunta:</label>
-      <input type="text" id="pergunta-${cardId}" value="${card.pergunta || ""}" /><br>
-      <label>Alternativas (separadas por vírgula):</label>
-      <input type="text" id="alternativas-${cardId}" value="${card.alternativas ? card.alternativas.join(", ") : ""}" /><br>
-      <label>Resposta Correta:</label>
-      <input type="text" id="resposta-${cardId}" value="${card.respostaCerta || ""}" /><br>
-      <button data-cardid="${cardId}" class="salvar">Salvar Alterações</button>
-      <hr>
-    `;
-    container.appendChild(divCard);
-  }
 
-  // Adiciona evento de clique para cada botão "Salvar Alterações"
-  const botoesSalvar = document.getElementsByClassName("salvar");
-  Array.from(botoesSalvar).forEach((botao) => {
-    botao.addEventListener("click", salvarEdicao);
-  });
+    const vcardDiv = document.createElement("div");
+    vcardDiv.className = "vcard";
+    vcardDiv.id = cardId;
+    vcardDiv.innerHTML = `
+      <h2>${card.pergunta}</h2>
+      ${card.alternativas.map((alt) => `
+        <button class="${alt === card.respostaCerta ? 'certo' : 'errado'}">${alt}</button>
+      `).join("")}
+    `;
+    container.appendChild(vcardDiv);
+  }
 }
 
-// Função para salvar as edições feitas em um VCard específico no Realtime Database
-function salvarEdicao(event) {
-  const cardId = event.target.getAttribute("data-cardid");
-  const novaPergunta = document.getElementById(`pergunta-${cardId}`).value;
-  const novasAlternativasRaw = document.getElementById(`alternativas-${cardId}`).value;
-  const novasAlternativas = novasAlternativasRaw.split(",").map(item => item.trim());
-  const novaResposta = document.getElementById(`resposta-${cardId}`).value;
+// Definição de pontos ao clicar nas respostas certas
+let pontosAcumulados = 0;
+document.addEventListener("click", (event) => {
+  if (event.target.classList.contains("certo")) {
+    event.target.closest(".vcard").remove();
+    pontosAcumulados += 10;
+    console.log("Pontos acumulados:", pontosAcumulados);
+  } else if (event.target.classList.contains("errado")) {
+    event.target.closest(".vcard").remove();
+  }
+});
 
-  const cardRef = ref(db, `vcards/${cardId}`);
-  update(cardRef, {
-    pergunta: novaPergunta,
-    alternativas: novasAlternativas,
-    respostaCerta: novaResposta
-  })
-  .then(() => {
-    console.log(`VCard ${cardId} atualizado com sucesso!`);
-  })
-  .catch((error) => {
-    console.error("Erro ao atualizar o VCard:", error);
-  });
+// Botão final de entrega
+document.getElementById("entregarvcards").addEventListener("click", async function() {
+  if (currentUserId && pontosAcumulados > 0) {
+    await adicionarTp(currentUserId, pontosAcumulados);
+    pontosAcumulados = 0;
+  }
+  let today = new Date().toISOString().split("T")[0];
+  const btnRef = ref(db, `usuarios/${currentUserId}/btnFinalClicadoData`);
+  await set(btnRef, today);
+
+  this.style.display = "none";
+});
+
+// Função para adicionar pontos ao banco
+async function adicionarTp(userId, pontos = 0) {
+  if (!userId) {
+    console.error("Erro: userId está indefinido! Aguardando autenticação...");
+    return;
+  }
+  try {
+    const usuarioRef = ref(db, `usuarios/${userId}/Tp`);
+    const snapshot = await get(usuarioRef);
+    let TpAtual = snapshot.exists() && !isNaN(snapshot.val()) ? Number(snapshot.val()) : 0;
+    let novoTp = TpAtual + pontos;
+    await set(usuarioRef, novoTp);
+    console.log(`Tp atualizado corretamente para: ${novoTp}`);
+  } catch (error) {
+    console.error("Erro ao atualizar Tp:", error);
+  }
 }
