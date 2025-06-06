@@ -66,3 +66,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 });})
+
+
+function mostrarMenuParaAdmin() {
+  const dbRef = firebase.database().ref("/menu");
+  
+  dbRef.once("value")
+    .then(snapshot => {
+      const menuData = snapshot.val();
+      const menuContainer = document.getElementById("menu");
+
+      if (menuData) {
+        Object.keys(menuData).forEach(key => {
+          const menuItem = document.createElement("li");
+          menuItem.textContent = menuData[key].nome; 
+          menuContainer.appendChild(menuItem);
+        });
+      }
+    })
+    .catch(error => console.error("Erro ao carregar menu:", error));
+}
+
+
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    user.getIdTokenResult().then(idTokenResult => {
+      if (idTokenResult.claims.adm) {
+        console.log("Usuário administrador. Exibindo menu.");
+        mostrarMenuParaAdmin(); 
+      } else {
+        console.log("Usuário comum. Menu restrito.");
+      }
+    });
+  }
+});
