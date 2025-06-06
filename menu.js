@@ -1,4 +1,4 @@
-import { auth, db } from "./firebase.js";
+import { app, analytics, auth, db, getDatabase } from "./firebase.js";
 import { ref, get, update } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
 
