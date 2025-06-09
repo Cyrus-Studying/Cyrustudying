@@ -114,13 +114,17 @@ async function adicionarTp(userId, pontos = 0) {
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     const idTokenResult = await user.getIdTokenResult();
+    console.log("Claims do usuário:", idTokenResult.claims); // Adicionando log para debug
+
     if (idTokenResult.claims.adm) {
-      console.log("Usuário é administrador, permitindo edição.");
+      console.log("Usuário administrador! Exibindo menu.");
+      mostrarMenuParaAdmin();
     } else {
-      console.log("Usuário comum. Edição bloqueada.");
+      console.log("Usuário comum. Menu restrito.");
     }
   }
 });
+
 
 function criarOuEditarVCard(cardId, novaPergunta, novasAlternativas, novaRespostaCerta) {
   const vcardRef = ref(db, `vcards/${cardId}`);
