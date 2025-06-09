@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
           } else {
             console.log("Nenhum ponto encontrado para esse usuário.");
             tpElem.innerText = "Tp: 0";
-
             // Armazenar Tp = 0 no Firebase, se necessário
             await update(ref(db, `usuarios/${userId}`), { Tp: 0 });
             console.log("Pontos Tp salvos com sucesso!");
@@ -72,42 +71,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
-});
-
-// Função para mostrar o menu para o administrador utilizando Firebase Modular
-function mostrarMenuParaAdmin() {
-  const dbRef = ref(db, "/menu");
-  get(dbRef)
-    .then(snapshot => {
-      const menuData = snapshot.val();
-      const menuContainer = document.getElementById("menu");
-      if (!menuContainer) {
-        console.warn("Elemento 'menu' não encontrado na página.");
-        return;
-      }
-      if (menuData) {
-        Object.keys(menuData).forEach(key => {
-          const menuItem = document.createElement("li");
-          menuItem.textContent = menuData[key].nome;
-          menuContainer.appendChild(menuItem);
-        });
-      }
-    })
-    .catch(error => console.error("Erro ao carregar menu:", error));
-}
-
-// Verificar se o usuário é administrador e, se sim, exibir o menu
-auth.onAuthStateChanged(user => {
-  if (user) {
-    user.getIdTokenResult()
-      .then(idTokenResult => {
-        if (idTokenResult.claims.adm) {
-          console.log("Usuário administrador. Exibindo menu.");
-          mostrarMenuParaAdmin();
-        } else {
-          console.log("Usuário comum. Menu restrito.");
-        }
-      })
-      .catch(error => console.error("Erro ao obter token:", error));
-  }
 });
