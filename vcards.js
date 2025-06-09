@@ -122,7 +122,6 @@ auth.onAuthStateChanged(async (user) => {
 
       if (isAdmin) {
         console.log("Usuário é administrador! Exibindo opções.");
-        mostrarMenuParaAdmin();
       } else {
         console.log("Usuário comum. Acesso restrito.");
       }
