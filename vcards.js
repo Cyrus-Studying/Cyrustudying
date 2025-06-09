@@ -1,6 +1,8 @@
-import { auth, db } from "./firebase.js";  // Certifique-se de que o caminho está correto
+import { auth, db } from "./firebase.js";
 import { ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
+console.log("Auth:", auth); // Verifica se auth está carregado corretamente
+console.log("DB:", db);     // Verifica se db está carregado corretamente
 
 // Agora você pode usar `ref(db, "caminho")`
 const usuarioRef = ref(db, `usuarios/UID_DO_USUARIO/adm`);
