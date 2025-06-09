@@ -113,17 +113,25 @@ async function adicionarTp(userId, pontos = 0) {
 
 auth.onAuthStateChanged(async (user) => {
   if (user) {
-    const idTokenResult = await user.getIdTokenResult();
-    console.log("Claims do usuário:", idTokenResult.claims); // Adicionando log para debug
+    const userId = user.uid;
+    const usuarioRef = ref(db, `usuarios/${userId}/adm`);
 
-    if (idTokenResult.claims.adm) {
-      console.log("Usuário administrador! Exibindo menu.");
-      mostrarMenuParaAdmin();
-    } else {
-      console.log("Usuário comum. Menu restrito.");
+    try {
+      const snapshot = await get(usuarioRef);
+      const isAdmin = snapshot.exists() ? snapshot.val() : false;
+
+      if (isAdmin) {
+        console.log("Usuário é administrador! Exibindo opções.");
+        mostrarMenuParaAdmin();
+      } else {
+        console.log("Usuário comum. Acesso restrito.");
+      }
+    } catch (error) {
+      console.error("Erro ao verificar administrador:", error);
     }
   }
 });
+
 
 
 function criarOuEditarVCard(cardId, novaPergunta, novasAlternativas, novaRespostaCerta) {
