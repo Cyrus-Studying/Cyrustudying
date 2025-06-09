@@ -108,3 +108,30 @@ async function adicionarTp(userId, pontos = 0) {
     console.error("Erro ao atualizar Tp:", error);
   }
 }
+
+// Cirar/editar as VCards!
+
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    const idTokenResult = await user.getIdTokenResult();
+    if (idTokenResult.claims.adm) {
+      console.log("Usuário é administrador, permitindo edição.");
+    } else {
+      console.log("Usuário comum. Edição bloqueada.");
+    }
+  }
+});
+
+function criarOuEditarVCard(cardId, novaPergunta, novasAlternativas, novaRespostaCerta) {
+  const vcardRef = ref(db, `vcards/${cardId}`);
+
+  const vcardData = {
+    pergunta: novaPergunta,
+    alternativas: novasAlternativas.split(","), // Transforma string em array
+    respostaCerta: novaRespostaCerta
+  };
+
+  set(vcardRef, vcardData)
+    .then(() => console.log("VCard criado/atualizado com sucesso!", vcardData))
+    .catch((error) => console.error("Erro ao criar/editar VCard:", error));
+}
