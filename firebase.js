@@ -22,4 +22,4 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getDatabase(app); 
 
-export { app, analytics, auth, db }; // **Remova ref daqui**
+export { app, analytics, auth, db, getDatabase }; // **Remova ref daqui**
