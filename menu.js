@@ -1,89 +1,94 @@
+// Importações do Firebase Database e Authentication (Firebase Modular)
 import { ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
-import { db } from "./firebase.js"; // Importa db corretamente
+import { GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { auth, db } from "./firebase.js"; // Verifique se o caminho está correto
 
-// Agora você pode usar `ref(db, "caminho")`
+// Debug: Verifica se os módulos estão carregados
+console.log("Auth:", auth);
+console.log("DB:", db);
+
+// Exemplo de verificação de adm para um usuário específico
 const usuarioRef = ref(db, `usuarios/UID_DO_USUARIO/adm`);
 get(usuarioRef).then(snapshot => console.log("Valor de adm:", snapshot.val()));
 
-
 // Redirect dos botões do menu
+const irParaVcardsElem = document.getElementById("irparavcards");
+if (irParaVcardsElem) {
+  irParaVcardsElem.addEventListener("click", () => {
+    window.location.href = "VCards.html"; // Redireciona para as VCards
+  });
+} else {
+  console.warn("Elemento 'irparavcards' não encontrado.");
+}
 
-document.getElementById("irparavcards").addEventListener("click", () => {
-  window.location.href = "VCards.html"; // Vá para as VCards
-});
+const irParaLojinhaElem = document.getElementById("irparalojinha");
+if (irParaLojinhaElem) {
+  irParaLojinhaElem.addEventListener("click", () => {
+    window.location.href = "Lojinha.html"; // Redireciona para a Lojinha
+  });
+} else {
+  console.warn("Elemento 'irparalojinha' não encontrado.");
+}
 
-document.getElementById("irparalojinha").addEventListener("click", () => {
-  window.location.href = "Lojinha.html"; // Vá para a Lojinha
-});
-
-
-// Carregar os Tp
-
+// Carregar os Tp após o DOM estar pronto
 document.addEventListener("DOMContentLoaded", () => {
-  auth.onAuthStateChanged(async (user) => { 
+  auth.onAuthStateChanged(async (user) => {
     if (user) {
       const userId = user.uid;
       console.log("Usuário autenticado, UID:", userId);
 
-
-      // Buscar os Tp no Firebase
-
+      // Buscar os Tp do usuário no Firebase
       try {
         const snapshot = await get(ref(db, `usuarios/${userId}/Tp`));
-        if (snapshot.exists()) {
-          console.log("Pontos encontrados:", snapshot.val());
-          document.getElementById("tp").innerText = `Tp: ${snapshot.val()}`;
+        const tpElem = document.getElementById("tp");
+        if (tpElem) {
+          if (snapshot.exists()) {
+            console.log("Pontos encontrados:", snapshot.val());
+            tpElem.innerText = `Tp: ${snapshot.val()}`;
+          } else {
+            console.log("Nenhum ponto encontrado para esse usuário.");
+            tpElem.innerText = "Tp: 0";
+
+            // Armazenar Tp = 0 no Firebase, se necessário
+            await update(ref(db, `usuarios/${userId}`), { Tp: 0 });
+            console.log("Pontos Tp salvos com sucesso!");
+          }
         } else {
-          console.log("Nenhum ponto encontrado para esse usuário.");
-          document.getElementById("tp").innerText = "Tp: 0";
-
-
-          // Armazenar Tp = 0 no Firebase (caso ainda não tenha sido salvo)
-
-          await update(ref(db, `usuarios/${userId}`), { Tp: 0 });
-          console.log("Pontos Tp salvos com sucesso!");
+          console.warn("Elemento 'tp' não encontrado.");
         }
       } catch (error) {
         console.error("Erro ao buscar/salvar Tp:", error);
       }
-      
-
-      //Não achei o user - Vamos fazer o login denovo!
     } else {
       console.log("Nenhum usuário autenticado!");
-
       try {
-        const provider = new GoogleAuthProvider(); 
+        const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         console.log("Login bem-sucedido:", user);
       } catch (error) {
         console.error("Erro ao fazer login:", error);
         alert("Erro ao fazer login: " + error.message);
-        if (snapshot.exists()) {
-          console.log("Pontos encontrados:", snapshot.val());
-          document.getElementById("tp").innerText = `Tp: ${snapshot.val()}`;
-        } else {
-          console.log("Nenhum ponto encontrado para esse usuário.");
-          document.getElementById("tp").innerText = "Tp: 0";
       }
     }
-  };
-});})
+  });
+});
 
-
+// Função para mostrar o menu para o administrador utilizando Firebase Modular
 function mostrarMenuParaAdmin() {
-  const dbRef = firebase.database().ref("/menu");
-  
-  dbRef.once("value")
+  const dbRef = ref(db, "/menu");
+  get(dbRef)
     .then(snapshot => {
       const menuData = snapshot.val();
       const menuContainer = document.getElementById("menu");
-
+      if (!menuContainer) {
+        console.warn("Elemento 'menu' não encontrado na página.");
+        return;
+      }
       if (menuData) {
         Object.keys(menuData).forEach(key => {
           const menuItem = document.createElement("li");
-          menuItem.textContent = menuData[key].nome; 
+          menuItem.textContent = menuData[key].nome;
           menuContainer.appendChild(menuItem);
         });
       }
@@ -91,16 +96,18 @@ function mostrarMenuParaAdmin() {
     .catch(error => console.error("Erro ao carregar menu:", error));
 }
 
-
-firebase.auth().onAuthStateChanged(user => {
+// Verificar se o usuário é administrador e, se sim, exibir o menu
+auth.onAuthStateChanged(user => {
   if (user) {
-    user.getIdTokenResult().then(idTokenResult => {
-      if (idTokenResult.claims.adm) {
-        console.log("Usuário administrador. Exibindo menu.");
-        mostrarMenuParaAdmin(); 
-      } else {
-        console.log("Usuário comum. Menu restrito.");
-      }
-    });
+    user.getIdTokenResult()
+      .then(idTokenResult => {
+        if (idTokenResult.claims.adm) {
+          console.log("Usuário administrador. Exibindo menu.");
+          mostrarMenuParaAdmin();
+        } else {
+          console.log("Usuário comum. Menu restrito.");
+        }
+      })
+      .catch(error => console.error("Erro ao obter token:", error));
   }
 });
