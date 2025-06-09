@@ -117,6 +117,20 @@ async function adicionarTp(userId, pontos = 0) {
 }
 
 // Cirar/editar as VCards!
+function criarOuEditarVCard(cardId, novaPergunta, novasAlternativas, novaRespostaCerta) {
+  const vcardRef = ref(db, `vcards/${cardId}`);
+
+  const vcardData = {
+    pergunta: novaPergunta,
+    alternativas: novasAlternativas.split(","), // Transforma string em array
+    respostaCerta: novaRespostaCerta
+  };
+
+  set(vcardRef, vcardData)
+    .then(() => console.log("VCard criado/atualizado com sucesso!", vcardData))
+    .catch((error) => console.error("Erro ao criar/editar VCard:", error));
+}
+
 
 auth.onAuthStateChanged(async (user) => {
   if (user) {
@@ -137,19 +151,3 @@ auth.onAuthStateChanged(async (user) => {
     }
   }
 });
-
-
-
-function criarOuEditarVCard(cardId, novaPergunta, novasAlternativas, novaRespostaCerta) {
-  const vcardRef = ref(db, `vcards/${cardId}`);
-
-  const vcardData = {
-    pergunta: novaPergunta,
-    alternativas: novasAlternativas.split(","), // Transforma string em array
-    respostaCerta: novaRespostaCerta
-  };
-
-  set(vcardRef, vcardData)
-    .then(() => console.log("VCard criado/atualizado com sucesso!", vcardData))
-    .catch((error) => console.error("Erro ao criar/editar VCard:", error));
-}
