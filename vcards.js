@@ -151,3 +151,5 @@ auth.onAuthStateChanged(async (user) => {
     }
   }
 });
+
+export { criarOuEditarVCard };
