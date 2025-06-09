@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-analytics.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-import { getDatabase, ref } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"; // Corrigido!
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCWP1-iiXx7gmL1MnW8Yn3tvcDIQpcoqLI",
@@ -22,4 +22,4 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getDatabase(app); 
 
-export { app, analytics, auth, db, getDatabase, ref }; // Agora `ref` pode ser exportado corretamente!
+export { app, analytics, auth, db }; // **Remova ref daqui**
