@@ -3,13 +3,11 @@ import { ref, get, set, update, onValue } from "https://www.gstatic.com/firebase
 import { GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
 import { auth, db } from "./firebase.js"; // Verifique se o caminho está correto
 
+
 // Debug: Verifica se os módulos estão carregados
 console.log("Auth:", auth);
 console.log("DB:", db);
 
-// Exemplo de verificação de adm para um usuário específico
-const usuarioRef = ref(db, `usuarios/UID_DO_USUARIO/adm`);
-get(usuarioRef).then(snapshot => console.log("Valor de adm:", snapshot.val()));
 
 // Redirect dos botões do menu
 const irParaVcardsElem = document.getElementById("irparavcards");
@@ -29,6 +27,7 @@ if (irParaLojinhaElem) {
 } else {
   console.warn("Elemento 'irparalojinha' não encontrado.");
 }
+
 
 // Carregar os Tp após o DOM estar pronto
 document.addEventListener("DOMContentLoaded", () => {
