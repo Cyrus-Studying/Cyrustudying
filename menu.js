@@ -1,9 +1,6 @@
 import { app, analytics, auth, db, getDatabase } from "./firebase.js";
 import { ref, get, update } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-// Deifinições básicas
-const db = firebase.database();
-
 // Redirect dos botões do menu
 
 document.getElementById("irparavcards").addEventListener("click", () => {
